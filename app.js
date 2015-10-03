@@ -5,16 +5,26 @@
   var fs = require('fs');
 
   var parse = require('parse-link-header');
+  var cmd = require('commander');
   var request = require('request');
   var async = require('async');
   var chalk = require('chalk');
   var _ = require('lodash');
 
   var config = require('./config');
+  var ver = require('./package.json').version;
 
-  var arg = process.argv.slice(2)[0] || '';
-  if (!arg) {
-    console.log("Usage: node app.js [user|organization]");
+  cmd
+    .version(ver)
+    .usage('[options] <user|organization> [repositories...]')
+    .option('-u, --update', 'Update (git pull) cloned repositories')
+    .option('--forked', 'Only clone forked repositories - TODO')
+    .option('--own', 'Only clone own repositories - TODO')
+    .option('-v, --verbose', 'Print git tool messages')
+    .parse(process.argv);
+
+  if (!cmd.args || cmd.args.length === 0) {
+    cmd.outputHelp();
     process.exit(1);
   }
 
@@ -127,8 +137,8 @@
       var opts = {
         stdio: [
           'pipe', // pipe child's stdin to parent
-          1,      // use parent's stdout
-          2       // use parent's stderr
+          cmd.verbose ? 1 : 'ignore', // use parent's stdout
+          cmd.verbose ? 2 : 'ignore'  // use parent's stderr
         ]
       };
 
@@ -138,20 +148,21 @@
         repoInfo.full_name
       ];
 
-      console.log(chalk.yellow.bold(' - Cloning '+repo.full_name));
+      console.log(chalk.yellow.bold(' - Cloning '+repoInfo.full_name));
       var child = spawn('git', args, opts);
       child.full_name = repoInfo.full_name;
       activeChild = child;
 
       child.on('close', function(code) {
         if (code) {
-          console.log(' - git clone failed for ' + repoInfo.clone_url);
+          console.log(chalk.red.bold(' - git clone failed for ' +
+                repoInfo.clone_url));
         }
         callback(null);
       });
       child.on('error', function(err) {
         if (err) {
-          console.log(chalk.red.bold('- ' + err.message));
+          console.log(chalk.red.bold(' - ' + err.message));
         }
       });
     };
@@ -175,8 +186,8 @@
         cwd: dir,
         stdio: [
           'pipe', // pipe child's stdin to parent
-          1,      // use parent's stdout
-          2       // use parent's stderr
+          cmd.verbose ? 1 : 'ignore', // use parent's stdout
+          cmd.verbose ? 2 : 'ignore'  // use parent's stderr
         ]
       };
 
@@ -199,7 +210,7 @@
 
       child.on('error', function(err) {
         if (err) {
-          console.log(chalk.red.bold('- ' + err.message));
+          console.log(chalk.red.bold(' - ' + err.message));
         }
         callback(null);
       });
@@ -222,7 +233,7 @@
        */
       function(callback) {
         var repoPageList = [];
-        var repoPage = baseUrl + '/users/' + arg + '/repos';
+        var repoPage = baseUrl + '/users/' + cmd.args[0] + '/repos';
         repoPageList.push(repoPage);
         console.log(chalk.green.bold('* Fetching repository pages'));
         getNextRepoPage(repoPage, repoPageList, callback);
@@ -281,7 +292,9 @@
                 } else {
 
                   // Directory is not empty, so add update task
-                  taskQueue.push(updateRepo(repo));
+                  if (cmd.update) {
+                    taskQueue.push(updateRepo(repo));
+                  }
                 }
               }
               cb(null);
@@ -307,5 +320,6 @@
         if (err) {
           console.log(err.message);
         }
+        console.log(chalk.blue.bold('* Done!'));
   });
 }).call(this);
