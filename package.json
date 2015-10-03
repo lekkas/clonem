@@ -11,8 +11,13 @@
     "url": "git+https://github.com/lekkas/clonem.git"
   },
   "keywords": [
-    "git"
+    "git",
+    "github",
+    "clone"
   ],
+  "bin": {
+    "clonem": "./bin/clonem"
+  },
   "author": "Kostas Lekkas",
   "license": "MIT",
   "bugs": {
@@ -21,6 +26,7 @@
   "homepage": "https://github.com/lekkas/repo-fetch#readme",
   "dependencies": {
     "async": "^1.4.2",
+    "chalk": "^1.1.1",
     "lodash": "^3.10.1",
     "parse-link-header": "^0.4.1",
     "request": "^2.64.0"
