@@ -18,6 +18,7 @@ var config = require('./config');
 
   var activeChild;
 
+  // Signal handler for Ctrl - C
   process.on('SIGINT', function() {
     if (activeChild) {
       console.log('Aborting '+activeChild.full_name);
@@ -25,43 +26,69 @@ var config = require('./config');
       activeChild = null;
     }
   });
-  // Signal handler for Ctrl - C
 
-  function getNextRepoPage(repoPage, repoPageList, callback) {
-    baseRequest.get(repoPage, function(error, resp, body) {
+  /*
+   * Get next repository page. When github repositories of a user/org
+   * are more than a certain threshold, Github paginates the repository
+   * list.
+   *
+   * @param repoPageURL The URL of a repository page. Normally this will be the
+   * first one, i.e. https://api.github.com/users/:user/repos . The function
+   * will then recursively append all next repository pages, if they exist, to
+   * the repoPages list.
+   * @param repoPages A list containing all repository page URL's
+   * @callback Callback to call when all repository pages have been retrieved
+   */
+  function getNextRepoPage(repoPageURL, repoPages, callback) {
+    baseRequest.get(repoPageURL, function(error, resp, body) {
       if (error || resp.statusCode != 200) {
         return callback(error);
       }
 
       if (!resp.headers.link)
-        return callback(null, repoPageList);
+        return callback(null, repoPages);
 
       var parsed = parse(resp.headers.link);
       if (parsed.next && parsed.next.url) {
-        repoPage = parsed.next.url;
-        repoPageList.push(repoPage);
+        var nextRepoPageURL = parsed.next.url;
+        repoPages.push(nextRepoPageURL);
 
-        // Prevent the stack from overflowing, though
-        // unlikely, since we don't expect a large
-        // number of github repository pagination
-        // results. Just playing with node here.
+        /*
+         * Prevent the stack from overflowing while we are recursing,
+         * though this is unlikely to happen, since we don't expect
+         * a large number of github repository pagination
+         * results. Just playing with node here.
+         */
         async.nextTick(function() {
-          getNextRepoPage(repoPage, repoPageList, callback);
+          getNextRepoPage(nextRepoPageURL, repoPages, callback);
         });
       } else {
-          callback(null, repoPageList);
+          callback(null, repoPages);
       }
     });
   }
 
-  function getRepos(repoPage, repoList, callback) {
-    baseRequest.get(repoPage, function(error, resp, body) {
+  /*
+   * Get full name, clone url and size of repository.
+   *
+   * @param repoPageURL The URL of repository page
+   * @param repos List of repository info objects:
+   * {
+   *  full_name: 'user/repo',
+   *  clone_url: 'URL',
+   *  size: 0
+   * }
+   * @param callback Callback to signal that repository info objects of for current page
+   * have been added to the list
+   */
+  function getRepos(repoPageURL, repos, callback) {
+    baseRequest.get(repoPageURL, function(error, resp, body) {
       if (error || resp.statusCode != 200) {
         return callback(error);
       }
 
       body = JSON.parse(body);
-      var repoPartialList = body.map(function(repo) {
+      var currentPageRepos = body.map(function(repo) {
         return {
           full_name: repo.full_name,
           clone_url: repo.clone_url,
@@ -69,32 +96,44 @@ var config = require('./config');
         };
       });
 
-      repoPartialList.forEach(function(repo) {
-        repoList.push(repo);
+      currentPageRepos.forEach(function(repo) {
+        repos.push(repo);
       });
 
       callback();
     });
   }
 
-  function cloneRepo(repo) {
+  /*
+   * Clone git repository, given a clone url.
+   *
+   * @param repoInfo The repository info object
+   * {
+   *  full_name: 'user/repo',
+   *  clone_url: 'URL',
+   *  size: 0
+   * }
+   *
+   * cloneRepo() will clone repo at location 'clone_url' into folder 'full_name'
+   */
+  function cloneRepo(repoInfo) {
     return function(callback) {
       var opts = {
         stdio: [
           'pipe', // pipe child's stdin to parent
-          1, // stdout
-          2 // stderr
+          1,      // stdout
+          2       // stderr
         ]
       };
 
       var args = [
         'clone',
-        repo.clone_url,
-        repo.full_name
+        repoInfo.clone_url,
+        repoInfo.full_name
       ];
 
       var child = spawn('git', args, opts);
-      child.full_name = repo.full_name;
+      child.full_name = repoInfo.full_name;
       activeChild = child;
 
       child.on('close', function(code) {
@@ -111,8 +150,6 @@ var config = require('./config');
     };
   }
 
-
-
   var baseUrl = 'https://api.github.com';
   var baseRequest = request.defaults({
     headers: {
@@ -125,7 +162,9 @@ var config = require('./config');
   // Populate 'repoPageList' with list of repository pages
   async.waterfall([
 
-      // Get repository Pages
+      /*
+       * Waterfall 1: Get URLs of all repository pages
+       */
       function(callback) {
         var repoPageList = [];
         var repoPage = baseUrl + '/users/' + arg + '/repos';
@@ -133,9 +172,13 @@ var config = require('./config');
         getNextRepoPage(repoPage, repoPageList, callback);
       },
 
-      // Get repository clone URLs
+      /*
+       * Waterfall 2: Get repository clone URLs
+       */
       function(repoPageList, callback) {
         var repoList = [];
+
+        // TODO: Is nesting 'async' module calls considered an antipattern?
         async.each(repoPageList, function (repoPage, cb) {
             getRepos(repoPage, repoList, cb);
           },
@@ -148,8 +191,10 @@ var config = require('./config');
         });
       },
 
-      // Clone repositories
-      // TODO: add option to update repos
+      /*
+       * Waterfall 3: Clone repositories
+       * TODO: add option to update repos
+       */
       function(repoList, callback) {
         var cloneTasks = [];
         var cloneList = [];
