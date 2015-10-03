@@ -7,6 +7,7 @@
   var parse = require('parse-link-header');
   var request = require('request');
   var async = require('async');
+  var chalk = require('chalk');
   var _ = require('lodash');
 
   var config = require('./config');
@@ -25,7 +26,7 @@
    */
   process.on('SIGINT', function() {
     if (activeChild) {
-      console.log('Aborting '+activeChild.full_name);
+      console.log(chalk.yellow('* Aborting '+activeChild.full_name));
       activeChild.kill('SIGKILL');
       activeChild = null;
     }
@@ -82,7 +83,8 @@
    *  clone_url: 'URL',
    *  size: 0
    * }
-   * @param callback Callback to signal that repository info objects of for current page
+   * @param callback Callback to signal that repository info objects of for
+   * current page
    * have been added to the list
    */
   function getRepos(repoPageURL, repos, callback) {
@@ -173,6 +175,7 @@
         var repoPageList = [];
         var repoPage = baseUrl + '/users/' + arg + '/repos';
         repoPageList.push(repoPage);
+        console.log(chalk.green.bold('* Fetching repository pages'));
         getNextRepoPage(repoPage, repoPageList, callback);
       },
 
@@ -183,12 +186,13 @@
         var repoList = [];
 
         // TODO: Is nesting 'async' module calls considered an antipattern?
+        console.log(chalk.green.bold('* Fetching repository urls'));
         async.each(repoPageList, function (repoPage, cb) {
             getRepos(repoPage, repoList, cb);
           },
           function (err) {
             if (err) {
-              console.log('Error: '+err);
+              console.log(chalk.red.bold('Error: '+err));
               process.exit(2);
             }
             callback(null, repoList);
@@ -203,16 +207,16 @@
         var cloneTasks = [];
         var cloneList = [];
 
+        console.log(chalk.green.bold('* Cloning repositores'));
         async.filter(repoList, function(repo, cb) {
           var dir = path.join(process.cwd(), repo.full_name);
           fs.stat(dir, function(err, stats) {
 
             // TODO: check if directory is working git repo
             // TODO: check if directory is empty; if so, continue
-            // TODO: Use colors (chalk)
             // with cloning
             if (stats !== undefined) {
-              console.log(repo.full_name + ' directory already exists');
+              console.log(chalk.yellow('* ' + repo.full_name + ' directory already exists'));
               cb(false);
             } else {
               cb(true);
@@ -226,7 +230,7 @@
 
           async.series(cloneTasks, function(err) {
             if (err) {
-              console.log(err);
+              console.log(chalk.red.bold(err));
             }
             callback(null);
           });
@@ -235,7 +239,7 @@
       }
     ], function (err) {
         if (err) {
-          console.log('Error: '+err);
+          console.log(chalk.red.bold('Error: '+err));
         }
   });
 }).call(this);
