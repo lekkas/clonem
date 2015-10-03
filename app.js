@@ -18,7 +18,10 @@ var config = require('./config');
 
   var activeChild;
 
-  // Signal handler for Ctrl - C
+  /* Signal handler for Ctrl-C
+   *
+   * Aborts download of current github repository
+   */
   process.on('SIGINT', function() {
     if (activeChild) {
       console.log('Aborting '+activeChild.full_name);
@@ -121,8 +124,8 @@ var config = require('./config');
       var opts = {
         stdio: [
           'pipe', // pipe child's stdin to parent
-          1,      // stdout
-          2       // stderr
+          1,      // use parent's stdout
+          2       // use parent's stderr
         ]
       };
 
@@ -138,7 +141,7 @@ var config = require('./config');
 
       child.on('close', function(code) {
         if (code) {
-          return callback(new Error('git ' + args + ' failed'));
+          return callback(new Error('git ' + args[0] + ' ' + args[1] + ' failed'));
         }
         callback(null);
       });
@@ -232,7 +235,6 @@ var config = require('./config');
     ], function (err) {
         if (err) {
           console.log('Error: '+err);
-          process.exit(2);
         }
   });
 })();
