@@ -19,8 +19,6 @@
     .version(ver)
     .usage('[options] <user|organization>')
     .option('-u, --update', 'Update (git pull) cloned repositories')
-    .option('--forked', 'Only clone forked repositories - TODO')
-    .option('--own', 'Only clone own repositories - TODO')
     .option('-v, --verbose', 'Print git tool messages')
     .parse(process.argv);
 
@@ -114,7 +112,7 @@
       });
 
       currentPageRepos.forEach(function(repo) {
-        repos.push(repo);
+          repos.push(repo);
       });
 
       callback();
@@ -238,7 +236,7 @@
         var repoPageList = [];
         var repoPage = baseUrl + '/users/' + cmd.args[0] + '/repos';
         repoPageList.push(repoPage);
-        console.log(chalk.green('* Fetching repository pages'));
+        console.log(chalk.yellow('* Fetching repository pages'));
         getNextRepoPage(repoPage, repoPageList, callback);
       },
 
@@ -249,7 +247,7 @@
         var repoList = [];
 
         // TODO: Is nesting 'async' module calls considered an antipattern?
-        console.log(chalk.green('* Fetching repository urls'));
+        process.stdout.write(chalk.yellow('* Fetching clone URLs'));
         async.each(repoPageList, function (repoPage, cb) {
             getRepos(repoPage, repoList, cb);
           },
@@ -258,6 +256,8 @@
               console.log(chalk.red.bold('Error: '+err));
               process.exit(2);
             }
+            process.stdout.write(chalk.green(' - found ' + repoList.length
+                  + ' repositories\n'));
             callback(null, repoList);
         });
       },

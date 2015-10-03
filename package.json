@@ -1,7 +1,7 @@
 {
   "name": "clonem",
   "version": "0.0.4",
-  "description": "Clone all github repos belonging to a user or organization",
+  "description": "Clone and update all github repos belonging to a user or organization",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
