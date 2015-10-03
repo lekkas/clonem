@@ -21,9 +21,9 @@
   "author": "Kostas Lekkas",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lekkas/repo-fetch/issues"
+    "url": "https://github.com/lekkas/clonem/issues"
   },
-  "homepage": "https://github.com/lekkas/repo-fetch#readme",
+  "homepage": "https://github.com/lekkas/clonem#readme",
   "dependencies": {
     "async": "^1.4.2",
     "chalk": "^1.1.1",
