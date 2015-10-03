@@ -285,14 +285,14 @@
               } else {
 
                 /*
-                 * If directory is empty then add the respective
-                 * repository to the clone task queue.
+                 * If directory is empty then enqueue a clone task
+                 * for the respective repository
                  */
                 if (files.length === 0) {
                   taskQueue.push(cloneRepo(repo));
                 } else {
 
-                  // Directory is not empty, so add update task
+                  // Directory is not empty, so enqueue update task
                   if (cmd.update) {
                     taskQueue.push(updateRepo(repo));
                   }
