@@ -26,7 +26,7 @@
    */
   process.on('SIGINT', function() {
     if (activeChild) {
-      console.log(chalk.yellow('* Aborting '+activeChild.full_name));
+      console.log(chalk.red(' - Aborting operation'));
       activeChild.kill('SIGKILL');
       activeChild = null;
     }
@@ -138,24 +138,73 @@
         repoInfo.full_name
       ];
 
+      console.log(chalk.yellow.bold(' - Cloning '+repo.full_name));
       var child = spawn('git', args, opts);
       child.full_name = repoInfo.full_name;
       activeChild = child;
 
       child.on('close', function(code) {
         if (code) {
-          return callback(new Error('git ' + args[0] + ' ' + args[1] + ' failed'));
+          console.log(' - git clone failed for ' + repoInfo.clone_url);
         }
         callback(null);
       });
       child.on('error', function(err) {
         if (err) {
-          return callback(err);
+          console.log(chalk.red.bold('- ' + err.message));
         }
       });
     };
   }
 
+  /*
+   * Update git repository
+   *
+   * @param repoInfo The repository info object
+   * {
+   *  full_name: 'user/repo',
+   *  clone_url: 'URL',
+   *  size: 0
+   * }
+   */
+  function updateRepo(repoInfo) {
+    return function(callback) {
+
+      var dir = path.join(process.cwd(), repoInfo.full_name);
+      var opts = {
+        cwd: dir,
+        stdio: [
+          'pipe', // pipe child's stdin to parent
+          1,      // use parent's stdout
+          2       // use parent's stderr
+        ]
+      };
+
+      var args = [
+        'pull'
+      ];
+
+      console.log(chalk.yellow.bold(' - Updating '+repoInfo.full_name));
+      var child = spawn('git', args, opts);
+      child.full_name = repoInfo.full_name;
+      activeChild = child;
+
+      child.on('close', function(code) {
+        if (code) {
+          console.log(chalk.red.bold(' - git pull failed for ' +
+                repoInfo.full_name));
+        }
+        callback(null);
+      });
+
+      child.on('error', function(err) {
+        if (err) {
+          console.log(chalk.red.bold('- ' + err.message));
+        }
+        callback(null);
+      });
+    };
+  }
   var baseUrl = 'https://api.github.com';
   var baseRequest = request.defaults({
     headers: {
@@ -200,46 +249,63 @@
       },
 
       /*
-       * Waterfall 3: Clone repositories
+       * Waterfall 3: Create task queue
        * TODO: add option to update repos
        */
       function(repoList, callback) {
         var cloneTasks = [];
+        var updateTasks = [];
         var cloneList = [];
+        var taskQueue = [];
+
+        if (repoList.length === 0) {
+          return callback(new Error(chalk.yellow.bold('* No repositories found!')));
+        }
 
         console.log(chalk.green.bold('* Cloning repositores'));
-        async.filter(repoList, function(repo, cb) {
+        async.each(repoList, function(repo, cb) {
           var dir = path.join(process.cwd(), repo.full_name);
-          fs.stat(dir, function(err, stats) {
+            fs.readdir(dir, function(err, files) {
 
-            // TODO: check if directory is working git repo
-            // TODO: check if directory is empty; if so, continue
-            // with cloning
-            if (stats !== undefined) {
-              console.log(chalk.yellow('* ' + repo.full_name + ' directory already exists'));
-              cb(false);
-            } else {
-              cb(true);
-            }
-          });
+              // Directory does not exist
+              if (err) {
+                taskQueue.push(cloneRepo(repo));
+              } else {
+
+                /*
+                 * If directory is empty then add the respective
+                 * repository to the clone task queue.
+                 */
+                if (files.length === 0) {
+                  taskQueue.push(cloneRepo(repo));
+                } else {
+
+                  // Directory is not empty, so add update task
+                  taskQueue.push(updateRepo(repo));
+                }
+              }
+              cb(null);
+            });
         },
-        function(cloneList) {
-          cloneList.forEach(function(repo) {
-            cloneTasks.push(cloneRepo(repo));
-          });
-
-          async.series(cloneTasks, function(err) {
-            if (err) {
-              console.log(chalk.red.bold(err));
-            }
-            callback(null);
-          });
-
+        function(err) {
+          callback(null, taskQueue);
         });
-      }
+      },
+
+      /*
+       * Waterfall 4: Run clone & update tasks
+       */
+      function(taskQueue, callback) {
+        async.series(taskQueue, function(err) {
+          if (err) {
+            console.log(err.message);
+          }
+          callback(null);
+        });
+      },
     ], function (err) {
         if (err) {
-          console.log(chalk.red.bold('Error: '+err));
+          console.log(err.message);
         }
   });
 }).call(this);
