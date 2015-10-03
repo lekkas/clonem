@@ -14,16 +14,17 @@
   var config = require('./config');
   var ver = require('./package.json').version;
 
+
   cmd
     .version(ver)
-    .usage('[options] <user|organization> [repositories...]')
+    .usage('[options] <user|organization>')
     .option('-u, --update', 'Update (git pull) cloned repositories')
     .option('--forked', 'Only clone forked repositories - TODO')
     .option('--own', 'Only clone own repositories - TODO')
     .option('-v, --verbose', 'Print git tool messages')
     .parse(process.argv);
 
-  if (!cmd.args || cmd.args.length === 0) {
+  if (!cmd.args || cmd.args.length !== 1) {
     cmd.outputHelp();
     process.exit(1);
   }
@@ -36,7 +37,7 @@
    */
   process.on('SIGINT', function() {
     if (activeChild) {
-      console.log(chalk.red(' - Aborting operation'));
+      process.stdout.write(chalk.red(' - Aborting operation\n'));
       activeChild.kill('SIGKILL');
       activeChild = null;
     }
@@ -148,15 +149,16 @@
         repoInfo.full_name
       ];
 
-      console.log(chalk.yellow.bold(' - Cloning '+repoInfo.full_name));
+      process.stdout.write(chalk.yellow.bold(' * Cloning '+repoInfo.full_name));
       var child = spawn('git', args, opts);
       child.full_name = repoInfo.full_name;
       activeChild = child;
 
-      child.on('close', function(code) {
+      child.on('close', function(code, signal) {
         if (code) {
-          console.log(chalk.red.bold(' - git clone failed for ' +
-                repoInfo.clone_url));
+          process.stdout.write(chalk.red.bold(' - git clone failed\n'));
+        } else if (!signal) {
+          process.stdout.write(chalk.green.bold(' - OK\n'));
         }
         callback(null);
       });
@@ -195,15 +197,16 @@
         'pull'
       ];
 
-      console.log(chalk.yellow.bold(' - Updating '+repoInfo.full_name));
+      process.stdout.write(chalk.yellow.bold(' * Updating '+repoInfo.full_name));
       var child = spawn('git', args, opts);
       child.full_name = repoInfo.full_name;
       activeChild = child;
 
-      child.on('close', function(code) {
+      child.on('close', function(code, signal) {
         if (code) {
-          console.log(chalk.red.bold(' - git pull failed for ' +
-                repoInfo.full_name));
+          process.stdout.write(chalk.red.bold(' - git pull failed\n'));
+        } else if (!signal) {
+          process.stdout.write(chalk.green.bold(' - OK\n'));
         }
         callback(null);
       });
@@ -235,7 +238,7 @@
         var repoPageList = [];
         var repoPage = baseUrl + '/users/' + cmd.args[0] + '/repos';
         repoPageList.push(repoPage);
-        console.log(chalk.green.bold('* Fetching repository pages'));
+        console.log(chalk.green('* Fetching repository pages'));
         getNextRepoPage(repoPage, repoPageList, callback);
       },
 
@@ -246,7 +249,7 @@
         var repoList = [];
 
         // TODO: Is nesting 'async' module calls considered an antipattern?
-        console.log(chalk.green.bold('* Fetching repository urls'));
+        console.log(chalk.green('* Fetching repository urls'));
         async.each(repoPageList, function (repoPage, cb) {
             getRepos(repoPage, repoList, cb);
           },
@@ -261,7 +264,6 @@
 
       /*
        * Waterfall 3: Create task queue
-       * TODO: add option to update repos
        */
       function(repoList, callback) {
         var cloneTasks = [];
@@ -273,7 +275,6 @@
           return callback(new Error(chalk.yellow.bold('* No repositories found!')));
         }
 
-        console.log(chalk.green.bold('* Cloning repositores'));
         async.each(repoList, function(repo, cb) {
           var dir = path.join(process.cwd(), repo.full_name);
             fs.readdir(dir, function(err, files) {
