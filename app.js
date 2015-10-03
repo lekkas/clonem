@@ -31,9 +31,9 @@
 
   var activeChild;
 
-  /* Signal handler for Ctrl-C
-   *
-   * Aborts download of current github repository
+  /*
+   * Signal handler for Ctrl-C (SIGINT)
+   * Aborts current operation (clone or update) on github repository
    */
   process.on('SIGINT', function() {
     if (activeChild) {
@@ -272,7 +272,7 @@
         var taskQueue = [];
 
         if (repoList.length === 0) {
-          return callback(new Error(chalk.yellow.bold('* No repositories found!')));
+          return callback(new Error(chalk.yellow.bold('* No repositories found')));
         }
 
         async.each(repoList, function(repo, cb) {
