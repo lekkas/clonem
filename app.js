@@ -1,15 +1,16 @@
-var spawn = require('child_process').spawn;
-var path = require('path');
-var fs = require('fs');
-
-var parse = require('parse-link-header');
-var request = require('request');
-var async = require('async');
-var _ = require('lodash');
-
-var config = require('./config');
-
 (function () {
+
+  var spawn = require('child_process').spawn;
+  var path = require('path');
+  var fs = require('fs');
+
+  var parse = require('parse-link-header');
+  var request = require('request');
+  var async = require('async');
+  var _ = require('lodash');
+
+  var config = require('./config');
+
   var arg = process.argv.slice(2)[0] || '';
   if (!arg) {
     console.log("Usage: node app.js [user|organization]");
@@ -237,4 +238,4 @@ var config = require('./config');
           console.log('Error: '+err);
         }
   });
-})();
+}).call(this);
