@@ -12,7 +12,6 @@
   var _ = require('lodash');
   var Configstore = require('configstore');
 
-  var config = require('./config');
   var pkg = require('./package.json');
 
   var token_url = 'https://github.com/settings/tokens';
