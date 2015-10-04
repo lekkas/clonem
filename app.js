@@ -19,7 +19,7 @@
 
   // TODO: Use more decent CLI parsing
   cmd
-    .version(pkg.ver)
+    .version(pkg.version)
     .usage('[options] [user|organization]')
     .option('-u, --update', 'Update (git pull) cloned repositories of user/organization')
     .option('--no-fork', 'Ignore forked repositories')
