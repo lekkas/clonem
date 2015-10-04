@@ -185,7 +185,6 @@
 
       process.stdout.write(chalk.yellow.bold(' * Cloning '+repoInfo.full_name));
       var child = spawn('git', args, opts);
-      child.full_name = repoInfo.full_name;
       activeChild = child;
 
       child.on('close', function(code, signal) {
