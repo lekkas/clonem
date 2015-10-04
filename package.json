@@ -28,6 +28,7 @@
     "async": "^1.4.2",
     "chalk": "^1.1.1",
     "commander": "^2.8.1",
+    "configstore": "^1.2.1",
     "lodash": "^3.10.1",
     "parse-link-header": "^0.4.1",
     "request": "^2.64.0"

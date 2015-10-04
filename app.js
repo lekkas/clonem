@@ -10,23 +10,51 @@
   var async = require('async');
   var chalk = require('chalk');
   var _ = require('lodash');
+  var Configstore = require('configstore');
 
   var config = require('./config');
-  var ver = require('./package.json').version;
+  var pkg = require('./package.json');
 
+  var token_url = 'https://github.com/settings/tokens';
+  var baseAPIUrl = 'https://api.github.com';
 
+  // TODO: Use more decent CLI parsing
   cmd
-    .version(ver)
-    .usage('[options] <user|organization>')
-    .option('-u, --update', 'Update (git pull) cloned repositories')
-    .option('-v, --verbose', 'Print git tool messages')
+    .version(pkg.ver)
+    .usage('[options] [user|organization]')
+    .option('-u, --update', 'Update (git pull) cloned repositories of user/organization')
+    .option('-v, --verbose', 'Print git messages')
+    .option('-t, --token <token>', 'Save Github personal API token')
     .parse(process.argv);
 
-  if (!cmd.args || cmd.args.length !== 1) {
+  if ( !cmd.token && (!cmd.args || cmd.args.length !== 1) ) {
     cmd.outputHelp();
     process.exit(1);
   }
 
+  var conf = new Configstore(pkg.name, {token: ''});
+  if (cmd.token) {
+    conf.set('token', cmd.token);
+    console.log(chalk.green.bold('* Saved token'));
+    if (!cmd.args || cmd.args.length !== 1)
+      process.exit(0);
+  }
+
+  var options = {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'lekkas/repo-fetch'
+    }
+  };
+
+  if (!conf.get('token')) {
+    console.log(chalk.yellow.bold('* No personal API token found. Your requests may get rate limited'));
+    console.log(chalk.yellow.bold('* Create a token at <' + token_url + '> and save it using the -t option\n'));
+  } else {
+    options.headers['Authorization'] = 'token ' + conf.get('token');
+  }
+
+  var baseRequest = request.defaults(options);
   var activeChild;
 
   /*
@@ -56,7 +84,9 @@
   function getNextRepoPage(repoPageURL, repoPages, callback) {
     baseRequest.get(repoPageURL, function(error, resp, body) {
       if (error || resp.statusCode != 200) {
-        return callback(error);
+        console.log(chalk.red.bold('Status Code: '+ resp.statusCode));
+        console.log(chalk.red.bold(body));
+        process.exit(3);
       }
 
       if (!resp.headers.link)
@@ -99,7 +129,9 @@
   function getRepos(repoPageURL, repos, callback) {
     baseRequest.get(repoPageURL, function(error, resp, body) {
       if (error || resp.statusCode != 200) {
-        return callback(error);
+        console.log(chalk.red.bold('Status Code: '+ resp.statusCode));
+        console.log(chalk.red.bold(body));
+        process.exit(3);
       }
 
       body = JSON.parse(body);
@@ -217,14 +249,6 @@
       });
     };
   }
-  var baseUrl = 'https://api.github.com';
-  var baseRequest = request.defaults({
-    headers: {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'lekkas/repo-fetch',
-      'Authorization': 'token ' + config.token
-    }
-  });
 
   // Populate 'repoPageList' with list of repository pages
   async.waterfall([
@@ -234,7 +258,7 @@
        */
       function(callback) {
         var repoPageList = [];
-        var repoPage = baseUrl + '/users/' + cmd.args[0] + '/repos';
+        var repoPage = baseAPIUrl + '/users/' + cmd.args[0] + '/repos';
         repoPageList.push(repoPage);
         console.log(chalk.yellow('* Fetching repository pages'));
         getNextRepoPage(repoPage, repoPageList, callback);
@@ -320,7 +344,8 @@
     ], function (err) {
         if (err) {
           console.log(err.message);
+        } else {
+          console.log(chalk.blue.bold('* Done!'));
         }
-        console.log(chalk.blue.bold('* Done!'));
   });
 }).call(this);
