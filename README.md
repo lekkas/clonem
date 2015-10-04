@@ -17,25 +17,24 @@ Clone (or update) all repositories belonging to user or organization.
 
 ## Install
 
-``` 
+```
 $ npm install -g clonem
 ```
 
 ## Usage
 
 ```
-$ clonem 
+$ clonem
 
-  Usage: app [options] <user|organization>
+  Usage: clonem [options] [user|organization]
 
   Options:
 
-    -h, --help     output usage information
-    -V, --version  output the version number
-    -u, --update   Update (git pull) cloned repositories
-    --forked       Only clone forked repositories - TODO
-    --own          Only clone own repositories - TODO
-    -v, --verbose  Print git tool messages
+    -h, --help           output usage information
+    -V, --version        output the version number
+    -u, --update         Update (git pull) cloned repositories of user/organization
+    -v, --verbose        Print git messages
+    -t, --token <token>  Save Github personal API token
 
 ```
 
