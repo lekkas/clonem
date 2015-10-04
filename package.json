@@ -13,12 +13,14 @@
   "keywords": [
     "git",
     "github",
-    "clone"
+    "clone",
+    "update",
+    "repository"
   ],
   "bin": {
     "clonem": "./bin/clonem"
   },
-  "author": "Kostas Lekkas",
+  "author": "Kostas Lekkas <kostas@lekkas.io> (https://lekkas.io/)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/lekkas/clonem/issues"
