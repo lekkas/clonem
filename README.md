@@ -1,7 +1,7 @@
 # clonem
 
 
-Clone (or update) all repositories belonging to user or organization.
+Clone (or update) all repositories belonging to a user or organization.
 
 ## Features
 
