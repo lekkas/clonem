@@ -23,6 +23,7 @@
     .version(pkg.ver)
     .usage('[options] [user|organization]')
     .option('-u, --update', 'Update (git pull) cloned repositories of user/organization')
+    .option('--no-fork', 'Ignore forked repositories')
     .option('-v, --verbose', 'Print git messages')
     .option('-t, --token <token>', 'Save Github personal API token')
     .parse(process.argv);
@@ -135,13 +136,17 @@
       }
 
       body = JSON.parse(body);
-      var currentPageRepos = body.map(function(repo) {
-        return {
-          full_name: repo.full_name,
-          clone_url: repo.clone_url,
-          size: repo.size
-        };
-      });
+      var currentPageRepos = body
+          .filter(function(repo) {
+            return cmd.fork || (!cmd.fork && !repo.fork);
+          })
+          .map(function(repo) {
+            return {
+              full_name: repo.full_name,
+              clone_url: repo.clone_url,
+              size: repo.size
+            };
+          });
 
       currentPageRepos.forEach(function(repo) {
           repos.push(repo);

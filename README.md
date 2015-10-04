@@ -33,9 +33,9 @@ $ clonem
     -h, --help           output usage information
     -V, --version        output the version number
     -u, --update         Update (git pull) cloned repositories of user/organization
+    --no-fork            Ignore forked repositories
     -v, --verbose        Print git messages
     -t, --token <token>  Save Github personal API token
-
 ```
 
 ## Example
@@ -44,12 +44,7 @@ $ clonem
 
 
 ## TODO
-
-* Add option to ignore forked repositories
-* Improve logging
 * Specify repositories to clone/update
-* Set/Get(/create?) token
-
 
 ## Licence
 
