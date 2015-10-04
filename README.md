@@ -40,9 +40,6 @@ $ clonem
 
 ![](./media/example.jpg)
 
-## TODO
-* Specify repositories to clone/update
-
 ## Licence
 
 Copyright (c) 2015 [Kostas Lekkas](https://lekkas.io)
