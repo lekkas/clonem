@@ -38,8 +38,7 @@ $ clonem
 
 ## Example
 
-``` $ clonem github ```
-
+![](./media/example.jpg)
 
 ## TODO
 * Specify repositories to clone/update
