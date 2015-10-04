@@ -3,8 +3,6 @@
 
 Clone (or update) all repositories belonging to user or organization.
 
-**Still Under Development**
-
 ## Features
 
 * Automatically download all repositories of user/organization
