@@ -51,7 +51,7 @@
     console.log(chalk.yellow.bold('* No personal API token found. Your requests may get rate limited'));
     console.log(chalk.yellow.bold('* Create a token at <' + token_url + '> and save it using the -t option\n'));
   } else {
-    options.headers['Authorization'] = 'token ' + conf.get('token');
+    options.headers.Authorization = 'token ' + conf.get('token');
   }
 
   var baseRequest = request.defaults(options);
@@ -283,8 +283,8 @@
               console.log(chalk.red.bold('Error: '+err));
               process.exit(2);
             }
-            process.stdout.write(chalk.green(' - found ' + repoList.length
-                  + ' repositories\n'));
+            process.stdout.write(chalk.green(' - found ' + repoList.length +
+                  ' repositories\n'));
             callback(null, repoList);
         });
       },
