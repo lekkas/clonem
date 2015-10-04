@@ -1,6 +1,6 @@
 {
   "name": "clonem",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Clone and update all github repos belonging to a user or organization",
   "main": "app.js",
   "scripts": {
