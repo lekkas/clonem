@@ -28,8 +28,8 @@ $ clonem
 
   Options:
 
-    -h, --help           output usage information
-    -V, --version        output the version number
+    -h, --help           Output usage information
+    -V, --version        Output the version number
     -u, --update         Update (git pull) cloned repositories of user/organization
     --no-fork            Ignore forked repositories
     -v, --verbose        Print git messages
